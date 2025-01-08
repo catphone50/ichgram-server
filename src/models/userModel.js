@@ -6,13 +6,23 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
+  avatar: { type: String, default: "" },
+  description: { type: String, default: "" },
+  createdAt: { type: Date, default: Date.now },
 });
 
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
+userSchema.virtual("followersCount", {
+  ref: "Follow",
+  localField: "_id",
+  foreignField: "following",
+  count: true,
+});
 
-  this.password = await bcrypt.hash(this.password, 5);
-  next();
+userSchema.virtual("followingCount", {
+  ref: "Follow",
+  localField: "_id",
+  foreignField: "follower",
+  count: true,
 });
 
 const User = mongoose.model("User", userSchema);
