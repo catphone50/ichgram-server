@@ -52,7 +52,10 @@ export const loginUser = async (req, res) => {
 
     res
       .status(200)
-      .json({ token, user: { id: user._id, username: user.username } });
+      .json({
+        token,
+        user: { id: user._id, username: user.username, avatar: user.avatar },
+      });
   } catch (error) {
     res.status(500).json({ message: "Something went wrong", error });
   }
