@@ -1,6 +1,9 @@
 import Post from "../models/postModel.js";
 import User from "../models/userModel.js";
+import Like from "../models/likeModel.js";
+import Comment from "../models/commentModel.js";
 
+// Create Post
 export const createPost = async (req, res) => {
   const { description, image } = req.body;
   const { userId } = req.params;
@@ -28,10 +31,13 @@ export const createPost = async (req, res) => {
   }
 };
 
+// Get All Posts
 export const getAllPosts = async (req, res) => {
   try {
     const posts = await Post.find()
       .populate("author", "username avatar")
+      .populate("likes")
+      .populate({ path: "comments", populate: { path: "likes" } })
       .sort({ createdAt: -1 });
 
     res.status(200).json(posts);
@@ -40,12 +46,15 @@ export const getAllPosts = async (req, res) => {
   }
 };
 
+// Get User Posts
 export const getUserPosts = async (req, res) => {
   const { userId } = req.params;
 
   try {
     const posts = await Post.find({ author: userId })
       .populate("author", "username avatar")
+      .populate("likes")
+      .populate({ path: "comments", populate: { path: "likes" } })
       .sort({ createdAt: -1 });
 
     if (posts.length === 0) {
@@ -58,6 +67,7 @@ export const getUserPosts = async (req, res) => {
   }
 };
 
+// Delete Post
 export const deletePost = async (req, res) => {
   const { postId } = req.params;
   const { userId } = req.body;
@@ -82,11 +92,15 @@ export const deletePost = async (req, res) => {
   }
 };
 
+// Get Post By Id
 export const getPostById = async (req, res) => {
   const { postId } = req.params;
 
   try {
-    const post = await Post.findById(postId);
+    const post = await Post.findById(postId)
+      .populate("author", "username avatar")
+      .populate("likes")
+      .populate({ path: "comments", populate: { path: "likes" } });
 
     if (!post) {
       return res.status(404).json({ message: "Post not found" });

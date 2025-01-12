@@ -7,14 +7,15 @@ import {
   unfollowUser,
   updateUserProfile,
 } from "../controllers/userController.js";
+import authMiddleware from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
-router.get("/:userId", getUserProfile);
-router.put("/:userId", updateUserProfile);
+router.get("/:userId", authMiddleware, getUserProfile);
+router.put("/:userId", authMiddleware, updateUserProfile);
 router.post("/follow", followUser);
 router.post("/unfollow", unfollowUser);
-router.get("/:userId/followers", getFollowers);
-router.get("/:userId/following", getFollowing);
+router.get("/:userId/followers", authMiddleware, getFollowers);
+router.get("/:userId/following", authMiddleware, getFollowing);
 
 export default router;

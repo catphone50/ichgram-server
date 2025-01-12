@@ -1,6 +1,8 @@
 import Comment from "../models/commentModel.js";
 import Post from "../models/postModel.js";
+import Like from "../models/likeModel.js";
 
+// Add Comment
 export const addComment = async (req, res) => {
   const { userId, postId, text } = req.body;
 
@@ -29,6 +31,7 @@ export const addComment = async (req, res) => {
   }
 };
 
+// Delete Comment
 export const deleteComment = async (req, res) => {
   const { commentId } = req.params;
   const { userId } = req.body;
@@ -57,12 +60,14 @@ export const deleteComment = async (req, res) => {
   }
 };
 
+// Get Comments By Post
 export const getCommentsByPost = async (req, res) => {
   const { postId } = req.params;
 
   try {
     const comments = await Comment.find({ post: postId })
       .populate("user", "username avatar")
+      .populate("likes")
       .sort({ createdAt: -1 });
 
     res.status(200).json(comments);
@@ -71,14 +76,15 @@ export const getCommentsByPost = async (req, res) => {
   }
 };
 
+// Get Comment By Id
 export const getCommentById = async (req, res) => {
   const { commentId } = req.params;
 
   try {
-    const comment = await Comment.findById(commentId).populate(
-      "user",
-      "username avatar"
-    );
+    const comment = await Comment.findById(commentId)
+      .populate("user", "username avatar")
+      .populate("likes");
+
     if (!comment) {
       return res.status(404).json({ message: "Comment not found" });
     }
