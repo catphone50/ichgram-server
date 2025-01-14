@@ -9,11 +9,13 @@ export const likePost = async (req, res) => {
   try {
     const post = await Post.findById(postId);
     if (!post) {
+      console.log("Post not found");
       return res.status(404).json({ message: "Post not found" });
     }
 
     const existingLike = await Like.findOne({ user: userId, post: postId });
     if (existingLike) {
+      console.log("You already liked this post");
       return res.status(400).json({ message: "You already liked this post" });
     }
 
@@ -24,8 +26,13 @@ export const likePost = async (req, res) => {
 
     await newLike.save();
 
+    // Обновляем массив лайков в посте
+    post.likes.push(newLike._id);
+    await post.save();
+
     res.status(200).json({ message: "Post liked successfully" });
   } catch (error) {
+    console.error("Error liking post", error);
     res.status(500).json({ message: "Error liking post", error });
   }
 };
@@ -37,13 +44,24 @@ export const unlikePost = async (req, res) => {
   try {
     const existingLike = await Like.findOne({ user: userId, post: postId });
     if (!existingLike) {
+      console.log("You haven't liked this post");
       return res.status(400).json({ message: "You haven't liked this post" });
     }
 
     await Like.findByIdAndDelete(existingLike._id);
 
+    // Обновляем массив лайков в посте
+    const post = await Post.findById(postId);
+    if (post) {
+      post.likes = post.likes.filter(
+        (likeId) => likeId.toString() !== existingLike._id.toString()
+      );
+      await post.save();
+    }
+
     res.status(200).json({ message: "Post unliked successfully" });
   } catch (error) {
+    console.error("Error unliking post", error);
     res.status(500).json({ message: "Error unliking post", error });
   }
 };
