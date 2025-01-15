@@ -1,5 +1,6 @@
 import User from "../models/userModel.js";
 import Follow from "../models/followModel.js";
+import Post from "../models/postModel.js";
 
 export const getUserProfile = async (req, res) => {
   const { userId } = req.params;
@@ -117,5 +118,46 @@ export const getFollowing = async (req, res) => {
     res.status(200).json(following);
   } catch (error) {
     res.status(500).json({ message: "Error fetching following", error });
+  }
+};
+
+export const getUserProfileWithPosts = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    // Запрос на пользователя с подсчетом фолловеров и подписок
+    const user = await User.findById(userId)
+      .select("-password")
+      .populate("followersCount followingCount")
+      .lean(); // Преобразует документ в простой объект JavaScript
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Запрос на посты пользователя
+    try {
+      const posts = await Post.find({ author: userId })
+        .populate("author", "username avatar")
+        .populate("likes")
+        .populate({
+          path: "comments",
+          populate: [
+            { path: "likes" },
+            { path: "user", select: "username avatar" },
+          ],
+        })
+        .sort({ createdAt: -1 })
+        .lean();
+      user.posts = posts;
+    } catch (error) {
+      console.error("Error fetching posts:", error);
+    }
+    // Добавляем посты к объекту пользователя
+
+    res.status(200).json(user);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error fetching user profile and posts", error });
   }
 };
