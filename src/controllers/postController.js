@@ -37,11 +37,18 @@ export const getAllPosts = async (req, res) => {
     const posts = await Post.find()
       .populate("author", "username avatar")
       .populate("likes")
-      .populate({ path: "comments", populate: { path: "likes" } })
+      .populate({
+        path: "comments",
+        populate: [
+          { path: "likes" },
+          { path: "user", select: "username avatar" },
+        ],
+      })
       .sort({ createdAt: -1 });
 
     res.status(200).json(posts);
   } catch (error) {
+    console.error("Error fetching posts:", error);
     res.status(500).json({ message: "Error fetching posts", error });
   }
 };
@@ -54,7 +61,13 @@ export const getUserPosts = async (req, res) => {
     const posts = await Post.find({ author: userId })
       .populate("author", "username avatar")
       .populate("likes")
-      .populate({ path: "comments", populate: { path: "likes" } })
+      .populate({
+        path: "comments",
+        populate: [
+          { path: "likes" },
+          { path: "user", select: "username avatar" },
+        ],
+      })
       .sort({ createdAt: -1 });
 
     if (posts.length === 0) {
@@ -100,7 +113,14 @@ export const getPostById = async (req, res) => {
     const post = await Post.findById(postId)
       .populate("author", "username avatar")
       .populate("likes")
-      .populate({ path: "comments", populate: { path: "likes" } });
+      .populate({
+        path: "comments",
+        populate: [
+          { path: "likes" },
+          { path: "user", select: "username avatar" },
+        ],
+      })
+      .sort({ createdAt: -1 });
 
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
