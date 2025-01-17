@@ -7,6 +7,7 @@ import postRoutes from "./src/routes/postRoutes.js";
 import followRoutes from "./src/routes/followRoutes.js";
 import likeRoutes from "./src/routes/likeRoutes.js";
 import commentRoutes from "./src/routes/commentRoutes.js";
+import searchRoutes from "./src/routes/searchRoutes.js";
 import cors from "cors";
 
 const app = express();
@@ -28,6 +29,7 @@ app.use("/api/posts", postRoutes);
 app.use("/api/follow", followRoutes);
 app.use("/api/likes", likeRoutes);
 app.use("/api/comments", commentRoutes);
+app.use("/api/search", searchRoutes);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

@@ -125,14 +125,23 @@ export const getUserProfileWithPosts = async (req, res) => {
   const { userId } = req.params;
   try {
     // Запрос на пользователя с подсчетом фолловеров и подписок
-    const user = await User.findById(userId)
-      .select("-password")
-      .populate("followersCount followingCount")
-      .lean(); // Преобразует документ в простой объект JavaScript
+    const user = await User.findById(userId).select("-password").lean(); // Преобразует документ в простой объект JavaScript
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+
+    const [followers, following] = await Promise.all([
+      Follow.find({ following: userId })
+        .populate("follower", "username avatar")
+        .lean(),
+      Follow.find({ follower: userId })
+        .populate("following", "username avatar")
+        .lean(),
+    ]);
+
+    user.followers = followers.map((f) => f.follower);
+    user.following = following.map((f) => f.following);
 
     // Запрос на посты пользователя
     try {

@@ -53,6 +53,67 @@ export const getAllPosts = async (req, res) => {
   }
 };
 
+// Get Posts By Limit
+export const getPostsByLimit = async (req, res) => {
+  const limit = parseInt(req.params.limit, 10);
+
+  try {
+    const posts = await Post.find()
+      .populate("author", "username avatar")
+      .populate("likes")
+      .populate({
+        path: "comments",
+        populate: [
+          { path: "likes" },
+          { path: "user", select: "username avatar" },
+        ],
+      })
+      .sort({ createdAt: -1 })
+      .limit(limit);
+
+    res.status(200).json(posts);
+  } catch (error) {
+    console.error("Error fetching posts:", error);
+    res.status(500).json({ message: "Error fetching posts", error });
+  }
+};
+
+// Get Posts By Likes Limit
+export const getPostsByLikesAndLimit = async (req, res) => {
+  const start = parseInt(req.params.start, 10);
+  const end = parseInt(req.params.end, 10);
+
+  if (start < 1 || end < start) {
+    return res.status(400).json({
+      message:
+        "Недопустимые параметры. Убедитесь, что start >= 1 и end >= start.",
+    });
+  }
+
+  const limit = end - start + 1;
+
+  try {
+    const posts = await Post.find()
+      .populate("author", "username avatar")
+      .populate("likes")
+      .populate({
+        path: "comments",
+        populate: [
+          { path: "likes" },
+          { path: "user", select: "username avatar" },
+        ],
+      })
+      .sort({ likes: -1 })
+      .skip(start - 1)
+      .limit(limit);
+
+    res.status(200).json(posts);
+  } catch (error) {
+    console.error("Ошибка при получении постов:", error);
+    res.status(500).json({ message: "Ошибка при получении постов", error });
+  }
+};
+
 // Get User Posts
 export const getUserPosts = async (req, res) => {
   const { userId } = req.params;

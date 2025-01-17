@@ -9,6 +9,7 @@ import {
   updateUserProfile,
 } from "../controllers/userController.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
+import { searchUsersWithPosts } from "../controllers/searchController.js";
 
 const router = express.Router();
 
