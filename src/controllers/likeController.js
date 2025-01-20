@@ -1,10 +1,21 @@
 import Like from "../models/likeModel.js";
 import Post from "../models/postModel.js";
 import Comment from "../models/commentModel.js";
+import {
+  createNotification,
+  deleteNotification,
+} from "./notificationController.js";
 
 // Like Post
 export const likePost = async (req, res) => {
-  const { userId, postId } = req.body;
+  const { postId, userId, username, type } = req.body;
+
+  if (!postId || !userId || !username || !type) {
+    console.log("Missing postId, userId, username, or type");
+    return res
+      .status(400)
+      .json({ message: "Missing postId, userId, username, or type" });
+  }
 
   try {
     const post = await Post.findById(postId);
@@ -26,10 +37,21 @@ export const likePost = async (req, res) => {
 
     await newLike.save();
 
+    const likedPost = await Post.findById(postId).populate("author");
+    const io = req.app.get("io");
+    console.log("Creating notification for", likedPost.author._id);
+    await createNotification(
+      io,
+      likedPost.author._id,
+      `${username} liked your post!`,
+      type
+    );
+
     // Обновляем массив лайков в посте
     post.likes.push(newLike._id);
     await post.save();
 
+    console.log("Post liked successfully");
     res.status(200).json({ message: "Post liked successfully" });
   } catch (error) {
     console.error("Error liking post", error);
@@ -39,7 +61,14 @@ export const likePost = async (req, res) => {
 
 // Unlike Post
 export const unlikePost = async (req, res) => {
-  const { userId, postId } = req.body;
+  const { postId, userId, username, type } = req.body;
+
+  if (!postId || !userId || !username || !type) {
+    console.log("Missing postId, userId, username, or type");
+    return res.status(400).json({
+      message: "Missing postId, userId, username, or type",
+    });
+  }
 
   try {
     const existingLike = await Like.findOne({ user: userId, post: postId });
@@ -58,7 +87,14 @@ export const unlikePost = async (req, res) => {
       );
       await post.save();
     }
+    console.log("Deleting notification for", post.author._id);
+    await deleteNotification(
+      post.author._id,
+      `${username} liked your post!`,
+      type
+    );
 
+    console.log("Post unliked successfully");
     res.status(200).json({ message: "Post unliked successfully" });
   } catch (error) {
     console.error("Error unliking post", error);

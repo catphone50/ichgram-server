@@ -22,6 +22,8 @@ export const createPost = async (req, res) => {
 
     await newPost.save();
 
+    await createNotification(req.user._id, "You have created a new post!");
+
     res
       .status(201)
       .json({ message: "Post created successfully", post: newPost });
