@@ -5,6 +5,7 @@ import {
   createNotification,
   deleteNotification,
 } from "./notificationController.js";
+import User from "../models/userModel.js";
 
 // Like Post
 export const likePost = async (req, res) => {
@@ -38,11 +39,15 @@ export const likePost = async (req, res) => {
     await newLike.save();
 
     const likedPost = await Post.findById(postId).populate("author");
+
     const io = req.app.get("io");
-    console.log("Creating notification for", likedPost.author._id);
     await createNotification(
       io,
       likedPost.author._id,
+      userId,
+      newLike._id,
+      "Post",
+      false,
       `${username} liked your post!`,
       type
     );
@@ -51,7 +56,6 @@ export const likePost = async (req, res) => {
     post.likes.push(newLike._id);
     await post.save();
 
-    console.log("Post liked successfully");
     res.status(200).json({ message: "Post liked successfully" });
   } catch (error) {
     console.error("Error liking post", error);
@@ -76,23 +80,26 @@ export const unlikePost = async (req, res) => {
       console.log("You haven't liked this post");
       return res.status(400).json({ message: "You haven't liked this post" });
     }
-
-    await Like.findByIdAndDelete(existingLike._id);
-
     // Обновляем массив лайков в посте
     const post = await Post.findById(postId);
     if (post) {
       post.likes = post.likes.filter(
         (likeId) => likeId.toString() !== existingLike._id.toString()
       );
+
+      await deleteNotification(
+        post.author._id,
+        userId,
+        existingLike._id,
+        "Post",
+        `${username} liked your post!`,
+        type
+      );
+
+      await Like.findByIdAndDelete(existingLike._id);
+
       await post.save();
     }
-    console.log("Deleting notification for", post.author._id);
-    await deleteNotification(
-      post.author._id,
-      `${username} liked your post!`,
-      type
-    );
 
     console.log("Post unliked successfully");
     res.status(200).json({ message: "Post unliked successfully" });
@@ -139,10 +146,16 @@ export const likeComment = async (req, res) => {
       return res.status(404).json({ message: "Comment not found" });
     }
 
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
     const existingLike = await Like.findOne({
       user: userId,
       comment: commentId,
     });
+
     if (existingLike) {
       return res
         .status(400)
@@ -155,6 +168,18 @@ export const likeComment = async (req, res) => {
     });
 
     await newLike.save();
+
+    const io = req.app.get("io");
+    await createNotification(
+      io,
+      comment.user,
+      userId,
+      newLike._id,
+      "Comment",
+      false,
+      `${user.username} liked your comment!`,
+      `liked comment!`
+    );
 
     res.status(200).json({ message: "Comment liked successfully" });
   } catch (error) {
@@ -176,6 +201,25 @@ export const unlikeComment = async (req, res) => {
         .status(400)
         .json({ message: "You haven't liked this comment" });
     }
+
+    const comment = await Comment.findById(commentId);
+    if (!comment) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    await deleteNotification(
+      comment.user,
+      userId,
+      existingLike._id,
+      "Comment",
+      `${user.username} liked your post!`,
+      `liked comment!`
+    );
 
     await Like.findByIdAndDelete(existingLike._id);
 
