@@ -115,3 +115,34 @@ export const getFollowing = async (req, res) => {
     res.status(500).json({ message: "Error fetching following", error });
   }
 };
+
+export const getMutualFollowers = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const followers = await Follow.find({ following: userId }).select(
+      "follower"
+    );
+    const following = await Follow.find({ follower: userId }).select(
+      "following"
+    );
+
+    const followerIds = followers.map((f) => f.follower.toString());
+    const followingIds = following.map((f) => f.following.toString());
+
+    const mutualFollowers = followerIds.filter((id) =>
+      followingIds.includes(id)
+    );
+
+    const mutualUsers = await User.find({
+      _id: { $in: mutualFollowers },
+    }).select("username avatar");
+
+    res.status(200).json(mutualUsers);
+  } catch (error) {
+    console.error("Ошибка при получении взаимных подписчиков:", error);
+    res
+      .status(500)
+      .json({ message: "Ошибка при получении взаимных подписчиков", error });
+  }
+};
